@@ -1,0 +1,6 @@
+numpy
+matplotlib
+finufft
+scipy
+scikit-image
+mrtrjgen # https://github.com/RyanShanghaitech/MRTrajGen
