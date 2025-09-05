@@ -2,37 +2,33 @@ from numpy import *
 from matplotlib.pyplot import *
 from mpl_toolkits.mplot3d import *
 import slime
-import mrtrjgen
 import finufft
-import fars as fars
+import mrautograd as mag
+import fars
 from time import time
 from skimage.metrics import structural_similarity as ssim
 
+gamma = 42.5756e6
+
 nPix = 256
-nTht = 64
-nPhi = 64
-sr = 100
 fov = 0.5
+sLim = 100 * gamma * fov/nPix
+gLim = 120e-3 * gamma * fov/nPix
 dtGrad = 10e-6
-dtADC = 2e-6
+dtADC = 2.5e-6
 
 # generate phantom
 arrM0 = slime.genPhan(nDim=3, nPix=nPix)["M0"]
 arrM0 = asarray(arrM0, dtype=complex128).squeeze()
 
 # load trajectory
+lstArrK0, lstArrGrad = mag.getG_Yarnball(dRhoPhi=0.5/(2*pi), dFov=fov, lNPix=nPix, dSLim=sLim, dGLim=gLim, dDt=dtGrad)
 lstArrK = []
-dTht0 = (2*pi)/nTht
-dPhi0 = (2*pi)/nPhi
-goldang = (3-sqrt(5))*pi
-for iPhi in range(nPhi):
-    for iTht in range(nTht):
-        tht0 = (2*pi)*(iTht/nTht)# + (2*pi/nTht)*(iPhi/nPhi)
-        phi0 = (2*pi)*(iPhi/nPhi)# + (2*pi/nPhi)*(iTht/nTht)
-        arrK, arrG = mrtrjgen.genSpiral3DTypeA(nPix, nTht, nPhi, tht0, phi0, 0.5, sr*(42.58e6)*(fov/nPix), dtGrad)
-        # arrK, arrG = mrtrjgen.genSpiral3DTypeB(nPix, nTht, nPhi, tht0, phi0, 0.5, sr*(42.58e6)*(fov/nPix), dtGrad)
-        arrK, _ = mrtrjgen.intpTraj(arrG, dtGrad, dtADC)
-        lstArrK.append(arrK.astype(float64))
+for arrK0, arrGrad in zip(lstArrK0, lstArrGrad):
+    arrK, _ = mag.cvtGrad2Traj(arrGrad, dtGrad, dtADC)
+    arrK += arrK0
+    lstArrK.append(arrK)
+    
 arrK = concatenate(lstArrK, axis=0)
 nPE = len(lstArrK)
 nK = arrK.shape[0]

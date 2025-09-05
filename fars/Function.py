@@ -68,20 +68,20 @@ def calDcf\
     
     del planNuift, planNufft, arrPsf
     
-    # array of Rho w.r.t. Trajectory, and cut-off window
-    arrRho = sqrt(sum(arrK**2, axis=-1)); arrRho = asarray(arrRho)
-    rhoMax = arrRho.max()
-    arrWindCutOff = kaiser_bessel_derived(nPix*2,8)[-nPix:]
-    arrWindCutOff -= arrWindCutOff[-1]
-    arrWindCutOff /= arrWindCutOff[0]
-    arrCutOffWind= interp(arrRho, linspace((1-2/nPix)*rhoMax,rhoMax,nPix), arrWindCutOff)
-    print(f"# cut-off window: {time()-t:.3f}s"); t = time()
-    del arrRho
+    # # array of Rho w.r.t. Trajectory, and cut-off window
+    # arrRho = sqrt(sum(arrK**2, axis=-1)); arrRho = asarray(arrRho)
+    # rhoMax = arrRho.max()
+    # arrWindCutOff = kaiser_bessel_derived(nPix*2,8)[-nPix:]
+    # arrWindCutOff -= arrWindCutOff[-1]
+    # arrWindCutOff /= arrWindCutOff[0]
+    # arrCutOffWind= interp(arrRho, linspace((1-2/nPix)*rhoMax,rhoMax,nPix), arrWindCutOff)
+    # print(f"# cut-off window: {time()-t:.3f}s"); t = time()
+    # del arrRho
     
-    # apply cut-off window
-    arrDcf *= arrCutOffWind
-    print(f"# apply cut-off window: {time()-t:.3f}s"); t = time()
-    del arrCutOffWind
+    # # apply cut-off window
+    # arrDcf *= arrCutOffWind
+    # print(f"# apply cut-off window: {time()-t:.3f}s"); t = time()
+    # del arrCutOffWind
 
     # normalize
     arrDcf = abs(arrDcf)
