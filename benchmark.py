@@ -1,3 +1,6 @@
+# export OMP_NUM_THREAD=16
+psum = sum
+
 from numpy import *
 from numpy.linalg import norm
 from matplotlib.pyplot import *
@@ -14,156 +17,176 @@ import h5py
 
 gamma = 42.5756e6 # UIH
 goldrat = (1+sqrt(5))/2
-random.seed(0)
 
 nPix = 256
 fov = 0.5
 sLim = 100 * gamma * fov/nPix
 gLim = 120e-3 * gamma * fov/nPix
 dtGrad = 10e-6
-dtADC = 2e-6
-sPathRes = "/mnt/d/LLibrary_250427/MrAutoDcf/resource/"
+dtADC = 5e-6
 
-sTraj = ["VdSpiral", "Rosette", "Yarnball", "Cones"][2] # <- select trajectory
-if sTraj in ["VdSpiral", "Rosette"]:
-    nAx = 2
-    mag.setGoldAng(1)
-elif sTraj in ["Yarnball", "Cones"]:
-    nAx = 3
-    mag.setGoldAng(0)
-else:
-    raise NotImplementedError("")
+sPathRes = "/mnt/d/LProject/DcfBenchmark/resource/"
+sMethod = ["Baseline", "Proposed"][1]
+fDiagFov = 1
 
 # generate phantom
-arrM0 = slime.genPhan(nDim=nAx, nPix=nPix)["M0"]
-arrM0 = asarray(arrM0, dtype=complex64).squeeze()
-
-# calculate trajectory
-if 0:
-    if sTraj=="VdSpiral": lstArrK0, lstArrGrad = mag.getG_VarDenSpiral(dFov=fov*sqrt(2)*goldrat, lNPix=nPix*sqrt(2)*goldrat, dSLim=sLim, dGLim=gLim, dDt=dtGrad)
-    elif sTraj=="Rosette": lstArrK0, lstArrGrad = mag.getG_Rosette(dFov=fov, lNPix=nPix, dSLim=sLim, dGLim=gLim, dDt=dtGrad)
-    elif sTraj=="Yarnball": lstArrK0, lstArrGrad = mag.getG_Yarnball(dFov=fov*sqrt(3), lNPix=nPix*sqrt(3), dSLim=sLim, dGLim=gLim, dDt=dtGrad); 
-    elif sTraj=="Cones": lstArrK0, lstArrGrad = mag.getG_Cones(dFov=fov*sqrt(3), lNPix=nPix*sqrt(3), dSLim=sLim, dGLim=gLim, dDt=dtGrad)
-    else: raise NotImplementedError("")
-    
-    lstArrK = []
-    for arrK0, arrGrad in zip(lstArrK0, lstArrGrad):
-        arrK, _ = mag.cvtGrad2Traj(arrGrad, dtGrad, dtADC)
-        arrK += arrK0
-        lstArrK.append(arrK[:,:nAx])
-    arrK = concatenate(lstArrK, axis=0, dtype=float32)[:,:nAx]
-    arrNk = array([arrK.shape[0] for arrK in lstArrK])
-    savemat(f"{sPathRes}arrK_{sTraj}.mat", {"arrK":arrK, "arrNk":arrNk, "sTraj":sTraj})
-    exit()
+sPathPhant2D = f"{sPathRes[:-1]}/arrM0_2d.npy"
+sPathPhant3D = f"{sPathRes[:-1]}/arrM0_3d.npy"
+if exists(sPathPhant2D) and exists(sPathPhant3D): # calculate phantom
+    arrM0_2d = load(sPathPhant2D)
+    arrM0_2d = asarray(arrM0_2d)
+    arrM0_3d = load(sPathPhant3D)
+    arrM0_3d = asarray(arrM0_3d)
 else:
-    dicArchive = loadmat(f"{sPathRes}arrK_{sTraj}.mat")
-    arrK = asarray(dicArchive["arrK"]).astype(float32)
-    arrNk = asarray(dicArchive["arrNk"]).astype(int)
-    sTraj = str(dicArchive["sTraj"].item())
+    random.seed(0)
+    arrM0_2d = slime.genPhan(nDim=2, nPix=nPix)["M0"]
+    arrM0_2d = asarray(arrM0_2d, dtype=complex64).squeeze()
 
-sMethod = ""
-if 0:
-    # propsoed
-    t = time()
-    arrDcf = mad.calDcf(nPix, arrK).astype(complex64)
-    t = time() - t
-    print(f"Texe: {t:.3f}s")
-    sMethod = "Proposed"
-elif 0:
-    # sigpy baseline
-    t = time()
-    arrDcf = pipe_menon_dcf(arrK*nPix, [nPix for _ in range(nAx)], max_iter=40, show_pbar=1).astype(complex64)
-    t = time() - t
-    print(f"Texe: {t:.3f}s")
-    sMethod = "Sigpy"
-else:
-    # external baseline
-    with h5py.File(f"{sPathRes}arrDcf_{sTraj}.mat") as f:
-        arrDcf = asarray(f["arrDcf"])[-1,:].astype(complex64)
-    sMethod = "Zwart"
+    random.seed(0)
+    arrM0_3d = slime.genPhan(nDim=3, nPix=nPix)["M0"]
+    arrM0_3d = asarray(arrM0_3d, dtype=complex64).squeeze()
+
+    save(sPathPhant2D, arrM0_2d)
+    save(sPathPhant3D, arrM0_3d)
+
+for sTraj in ["VdSpiral", "VdSpiral", "Rosette", "Yarnball", "Cones"]:
+# for sTraj in ["Yarnball"]:
+    if sTraj in ["VdSpiral", "Rosette"]:
+        nAx = 2
+        mag.setGoldAng(1)
+    elif sTraj in ["Yarnball", "Cones"]:
+        nAx = 3
+        mag.setGoldAng(0)
+    else:
+        raise NotImplementedError("")
+        
+    ovTraj = sqrt(nAx) if fDiagFov else 1
+    gLim = amin([gLim, 1/(dtADC*nPix*ovTraj)]) # gLim*dtADC < 1/nPix
+
+    # generate phantom
+    if nAx==2: arrM0 = arrM0_2d.copy()
+    if nAx==3: arrM0 = arrM0_3d.copy()
     
-arrDcf = mad.normDcf(arrDcf, nAx)
+    # calculate trajectory
+    if 0:
+        if sTraj=="VdSpiral": lstArrK0, lstArrGrad = mag.getG_VarDenSpiral(dFov=fov*goldrat*ovTraj, lNPix=nPix*goldrat*ovTraj, dSLim=sLim, dGLim=gLim, dDt=dtGrad)
+        elif sTraj=="Rosette": lstArrK0, lstArrGrad = mag.getG_Rosette(dFov=fov*goldrat*ovTraj/5, lNPix=nPix*goldrat*ovTraj/5, dSLim=sLim, dGLim=gLim, dDt=dtGrad)
+        elif sTraj=="Yarnball": lstArrK0, lstArrGrad = mag.getG_Yarnball(dFov=fov*ovTraj, lNPix=nPix*ovTraj, dSLim=sLim, dGLim=gLim, dDt=dtGrad)
+        elif sTraj=="Cones": lstArrK0, lstArrGrad = mag.getG_Cones(dFov=fov*ovTraj, lNPix=nPix*ovTraj, dSLim=sLim, dGLim=gLim, dDt=dtGrad)
+        else: raise NotImplementedError("")
+        
+        lstArrK = []
+        for arrK0, arrGrad in zip(lstArrK0, lstArrGrad):
+            arrK, _ = mag.cvtGrad2Traj(arrGrad, dtGrad, dtADC)
+            arrK += arrK0
+            lstArrK.append(arrK[:,:nAx])
+        arrK = concatenate(lstArrK, axis=0, dtype=float32)[:,:nAx]
+        arrNRO = array([arrK.shape[0] for arrK in lstArrK])
+        savemat(f"{sPathRes}arrK_{sTraj}.mat", {"arrK":arrK, "arrNRO":arrNRO, "sTraj":sTraj})
+        continue # test
+    else:
+        dicArchive = loadmat(f"{sPathRes}arrK_{sTraj}.mat")
+        arrK = asarray(dicArchive["arrK"]).astype(float32)
+        arrNRO = asarray(dicArchive["arrNRO"]).astype(int).squeeze()
+        sTraj = str(dicArchive["sTraj"].item())
+    arrI0 = zeros((arrNRO.size+1,), dtype=int)
+    arrI0[1:] = cumsum(arrNRO)
+    lstArrK = [arrK[arrI0[i]:arrI0[i+1]] for i in range(arrI0.size-1)]
+
+    if sMethod == "Proposed":
+        # propsoed
+        mad.setDbgInfo(0)
+        mad.setDtypeCheck(0)
+        
+        t0 = time()
+        arrDcf = mad.calDcf(int(nPix), arrK, arrI0, sWind="cos") # *ovTraj
+        tExe = time() - t0
+        
+        arrDcf = mad.normDcf(arrDcf, nAx)
+        print(f"Texe: {tExe:.3f}s")
+        # continue
+    elif sMethod == "Sigpy":
+        # sigpy baseline
+        t0 = time()
+        arrDcf = pipe_menon_dcf(arrK*nPix, [nPix for _ in range(nAx)], max_iter=40, show_pbar=1).astype(complex64)
+        tExe = time() - t0
+        print(f"Texe: {tExe:.3f}s")
+    elif sMethod == "Baseline":
+        # external baseline
+        with h5py.File(f"{sPathRes}arrDcf_{sTraj}.mat") as f:
+            arrDcf = asarray(f["arrDcf"]).astype(complex64).squeeze()
+            tExe = asarray(f["Texe"]).astype(float32).squeeze()
+        print(f"Texe: {tExe:.3f}s")
+    else:
+        raise NotImplementedError("")
+        
+    # simulate kspace
+    arrOm = (2*pi)*arrK.T.copy()
+    if nAx==2:
+        nufft = fn.nufft2d2
+        nuift = fn.nufft2d1
+    elif nAx==3:
+        nufft = fn.nufft3d2
+        nuift = fn.nufft3d1
+    else:
+        raise NotImplementedError("")
+
+    arrS = nufft(*arrOm, arrM0)
+
+    # calculate PSF and M0_Recon
+    arrM0Rec = nuift(*arrOm, arrS*arrDcf, tuple(nPix for _ in range(nAx)))
+    if sMethod=="Baseline": arrM0Rec *= norm(arrM0.flatten()) / norm(arrM0Rec.flatten())
+
+    ovPsf = 10
+    arrPsf = nuift(*arrOm/ovPsf, arrDcf, tuple(2*nPix for _ in range(nAx))) # must oversamp the PSF so that it can be properly ploted in surface plot view
+
+    # FOV nulling, normalize, evaluate
+    coords = ogrid[tuple(slice(-nPix/2, nPix/2, nPix*1j) for _ in range(nAx))]
+    arrGridRho = sqrt(psum(float32(c)**2 for c in coords))
+    mskFov = ones_like(arrGridRho, dtype=bool) if fDiagFov else arrGridRho < nPix/2 
     
-# simulate kspace
-arrOm = (2*pi)*arrK.T.copy()
-if nAx==2:
-    nufft = fn.nufft2d2
-    nuift = fn.nufft2d1
-elif nAx==3:
-    nufft = fn.nufft3d2
-    nuift = fn.nufft3d1
-else:
-    raise NotImplementedError("")
+    arrM0_Norm = mad.normImg(arrM0, mskFov=mskFov)
+    arrM0Rec_Norm = mad.normImg(arrM0Rec, mskFov=mskFov)
+    # SSIM is sensitive to `Luminance`, `Contrast` and `Structure`, so mean and std are normalized to let `Structure` speak
+    
+    vRange = abs(arrM0_Norm[mskFov]).max()*2
+    metNrmse = sqrt(mean(abs(arrM0Rec_Norm-arrM0_Norm)[mskFov]**2))/vRange
+    metSsim = ssim(abs(arrM0_Norm)*mskFov, abs(arrM0Rec_Norm)*mskFov, data_range=vRange)
+    
+    print(f"{sMethod} {sTraj} NRMSE: {metNrmse:.3f}")
+    print(f"SSIM: {metSsim:.3f}")
 
-arrS = nufft(*arrOm, arrM0)
+    # save data
+    arrDcf = mad.normDcf(arrDcf, nAx)
+    savez(f"{sPathRes[:-1]}/{sTraj}_{sMethod}.npz", arrDcf=arrDcf, arrPsf=arrPsf, arrM0Rec=arrM0Rec, tExe=tExe, metSsim=metSsim, metNrmse=metNrmse)
+    
+    print("")
 
-# calculate PSF and M0_Recon
-arrM0Rec = nuift(*arrOm, arrS*arrDcf, tuple(nPix for _ in range(nAx)))
-arrPsf = nuift(*arrOm, arrDcf, tuple(2*nPix for _ in range(nAx)))
+save(f"{sPathRes[:-1]}/mskFov_{nAx}d.npy", mskFov)
 
-# normalize, evaluate
-arrM0 = mad.normImg(arrM0)
-arrM0Rec = mad.normImg(arrM0Rec)
-
-# arrM0Gt_2Ch = arrM0[...,newaxis]
-# arrM0Gt_2Ch = concatenate([arrM0Gt_2Ch.real, arrM0Gt_2Ch.imag], axis=-1)
-# arrM0Rec_2Ch = arrM0Rec[...,newaxis]
-# arrM0Rec_2Ch = concatenate([arrM0Rec_2Ch.real, arrM0Rec_2Ch.imag], axis=-1)
-# print(f"SSIM: {ssim(arrM0Gt_2Ch, arrM0Rec_2Ch, data_range=4, channel_axis=-1):.3f}")
-print(f"{sMethod} {sTraj} NRMSE: {sqrt(mean(abs(arrM0Rec-arrM0)**2))/3:.3f}")
-
+exit()
 # plot
-if sTraj!="Yarnball": exit(0)
-
-figure(dpi=150)
-iK0 = 0
-iK1 = arrNk[0]
-print(arrNk.shape)
-plot(real(arrDcf[iK0:iK1]), ".-")
+wFPage = 4.77
+figure(dpi=150, figsize=(wFPage,wFPage/2))
+subplot(111)
+iK0 = arrI0[len(lstArrK)//16]
+iK1 = arrI0[len(lstArrK)//16+1]
+arrDcf = mad.normDcf(arrDcf, nAx)
+plot(abs(arrDcf[iK0:iK1]), ".-", markersize=4, linewidth=1, label=sMethod)
+# ylim(-0.1e-8,1.2e-8)
+xlabel("index [a.u.]")
+ylabel("DCF [a.u.]")
+legend(loc=2)
 grid(True, "both", "both")
+subplots_adjust(0.15,0.2,0.99,0.9)
 
-figure(dpi=150)
-vmean = abs(arrM0).mean()
-vstd = abs(arrM0).std()
-vmin = vmean - 1*vstd
-vmax = vmean + 3*vstd
-subplot(231)
-imshow(abs(arrM0[nPix//2,:,:]), cmap="gray", vmin=vmin, vmax=vmax); colorbar()
-subplot(232)
-imshow(abs(arrM0[:,nPix//2,:]), cmap="gray", vmin=vmin, vmax=vmax); colorbar()
-subplot(233)
-imshow(abs(arrM0[:,:,nPix//2]), cmap="gray", vmin=vmin, vmax=vmax); colorbar()
-subplot(234)
-imshow(angle(arrM0[nPix//2,:,:]), cmap="hsv", vmin=-pi, vmax=pi); colorbar()
-subplot(235)
-imshow(angle(arrM0[:,nPix//2,:]), cmap="hsv", vmin=-pi, vmax=pi); colorbar()
-subplot(236)
-imshow(angle(arrM0[:,:,nPix//2]), cmap="hsv", vmin=-pi, vmax=pi); colorbar()
+show()
+exit()
 
-figure(dpi=150)
-vmean = abs(arrM0Rec).mean()
-vstd = abs(arrM0Rec).std()
-vmin = vmean - 1*vstd
-vmax = vmean + 3*vstd
-subplot(231)
-imshow(abs(arrM0Rec[nPix//2,:,:]), cmap="gray", vmin=vmin, vmax=vmax); colorbar()
-subplot(232)
-imshow(abs(arrM0Rec[:,nPix//2,:]), cmap="gray", vmin=vmin, vmax=vmax); colorbar()
-subplot(233)
-imshow(abs(arrM0Rec[:,:,nPix//2]), cmap="gray", vmin=vmin, vmax=vmax); colorbar()
-subplot(234)
-imshow(angle(arrM0Rec[nPix//2,:,:]), cmap="hsv", vmin=-pi, vmax=pi); colorbar()
-subplot(235)
-imshow(angle(arrM0Rec[:,nPix//2,:]), cmap="hsv", vmin=-pi, vmax=pi); colorbar()
-subplot(236)
-imshow(angle(arrM0Rec[:,:,nPix//2]), cmap="hsv", vmin=-pi, vmax=pi); colorbar()
-
-figure(dpi=150)
-subplot(131)
-imshow(abs(arrPsf[nPix,:,:]), norm="log"); colorbar()
-subplot(132)
-imshow(abs(arrPsf[:,nPix,:]), norm="log"); colorbar()
-subplot(133)
-imshow(abs(arrPsf[:,:,nPix]), norm="log"); colorbar()
+figure()
+for i in range(nAx):
+    plot(lstArrGrad[0][:,i], ".-")
+    plot(lstArrGrad[0][:,i], ".-")
+    plot(lstArrGrad[0][:,i], ".-")
 
 show()

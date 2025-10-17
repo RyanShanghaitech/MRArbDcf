@@ -15,26 +15,38 @@ def cropDcf(arrDcf:ndarray, arrK:ndarray, nPix:int, nNyq:int=2) -> ndarray:
 
 
 def normDcf(arrDcf:ndarray, nAx:int) -> ndarray:
-    # arrDcf = abs(arrDcf).astype(arrDcf.dtype)
-    arrDcf = arrDcf/arrDcf.sum()
+    arrDcf = arrDcf/abs(arrDcf).sum()
     if nAx == 2: arrDcf *= pi/4
     if nAx == 3: arrDcf *= pi/6
     return arrDcf
 
-def normImg(arrData:ndarray, method:str="mean_std") -> ndarray:
-    if method=="mean_std":
-        vmean = arrData.mean()
+def normImg(arrData:ndarray, method:str="mean0_std1", mskFov:ndarray|None=None) -> ndarray:
+    arrData = arrData.copy()
+    
+    if mskFov is None:
+        _arrData = arrData
+    else:
+        _arrData = arrData[mskFov]
+    vmean = _arrData.mean()
+    vstd = _arrData.std()
+    vmax = abs(_arrData).max()
+    vene = norm(_arrData.flatten())
+        
+    if method=="mean0_std1":
         arrData -= vmean
-        arrData /= arrData.std()
+        arrData /= vstd
+    elif method=="mean1_std1":
+        arrData -= vmean
+        arrData /= vstd
         arrData += vmean/abs(vmean)
     elif method=="mean":
-        arrData /= abs(arrData.mean())
+        arrData /= abs(vmean)
     elif method=="std":
-        arrData /= arrData.std()
+        arrData /= vstd
     elif method=="max":
-        arrData /= abs(arrData).max()
-    elif method=="pow":
-        arrData /= norm(arrData.flatten())
+        arrData /= vmax
+    elif method=="energy":
+        arrData /= vene
     else:
         raise NotImplementedError("")
     return arrData

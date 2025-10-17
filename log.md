@@ -1,8 +1,33 @@
-# Development Log
+(default) ryan@DESKTOPRYAN:~/LProject/Github/MrAutoDcf_Private$ /home/ryan/anaconda3/envs/default/bin/python /home/ryan/LProject/Github/MrAutoDcf_Private/benchmark.py
+Texe: 4.181s
+SSIM: 0.886
+Zwart VdSpiral NRMSE: 0.028
+(default) ryan@DESKTOPRYAN:~/LProject/Github/MrAutoDcf_Private$ /home/ryan/anaconda3/envs/default/bin/python /home/ryan/LProject/Github/MrAutoDcf_Private/benchmark.py
+Texe: 10.056s
+SSIM: 0.905
+Zwart Rosette NRMSE: 0.026
+(default) ryan@DESKTOPRYAN:~/LProject/Github/MrAutoDcf_Private$ /home/ryan/anaconda3/envs/default/bin/python /home/ryan/LProject/Github/MrAutoDcf_Private/benchmark.py
+Texe: 1107.972s
+SSIM: 0.942
+Zwart Yarnball NRMSE: 0.076
+(default) ryan@DESKTOPRYAN:~/LProject/Github/MrAutoDcf_Private$ /home/ryan/anaconda3/envs/default/bin/python /home/ryan/LProject/Github/MrAutoDcf_Private/benchmark.py
+Texe: 587.511s
+SSIM: 0.944
+Zwart Cones NRMSE: 0.060
 
-## Oct 2nd, 2025
-I ran Zwart's C code and find his precision is higher than me, although the speed is still his shortage. However, the difference of precision i.e. the reconstruction quality is not observable with naked eyes.
-
-I find Zwart's C code use a polynominal function, which seems like a fit of the optimal kernel, and that kernel outperforms the kernel in his paper. This is why my reproduction is worse than his original C implementation.
-
-So I have to complete with another baseline. I decide to choose the implementation from sigpy. That implementation use a conventional Kaiser kernel as used in Pipe's work, and the grid convolution proposed by Zwarts. (which means the only difference is about kernel function)
+(default) ryan@DESKTOPRYAN:~/LProject/Github/MrAutoDcf_Private$ /home/ryan/anaconda3/envs/default/bin/python /home/ryan/LProject/Github/MrAutoDcf_Private/benchmark.py
+Texe: 0.096s
+SSIM: 0.886
+Proposed VdSpiral NRMSE: 0.032
+(default) ryan@DESKTOPRYAN:~/LProject/Github/MrAutoDcf_Private$ /home/ryan/anaconda3/envs/default/bin/python /home/ryan/LProject/Github/MrAutoDcf_Private/benchmark.py
+Texe: 0.112s
+SSIM: 0.911
+Proposed Rosette NRMSE: 0.028
+(default) ryan@DESKTOPRYAN:~/LProject/Github/MrAutoDcf_Private$ /home/ryan/anaconda3/envs/default/bin/python /home/ryan/LProject/Github/MrAutoDcf_Private/benchmark.py
+Texe: 21.218s
+SSIM: 0.917
+Proposed Yarnball NRMSE: 0.054
+(default) ryan@DESKTOPRYAN:~/LProject/Github/MrAutoDcf_Private$ /home/ryan/anaconda3/envs/default/bin/python /home/ryan/LProject/Github/MrAutoDcf_Private/benchmark.py
+Texe: 18.163s
+SSIM: 0.920
+Proposed Cones NRMSE: 0.052
