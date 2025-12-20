@@ -1,2 +1,9 @@
-temp
+*.npy
+*.npz
 test*
+dev
+
+*.egg-info/
+build
+dist
+__pycache__

@@ -1,8 +1,9 @@
 from numpy import *
+from numpy.typing import *
 from numpy.linalg import norm
 
 # null the outmost DCF data, useful for both Voronoi, Iterative, FFD method
-def cropDcf(arrDcf:ndarray, arrK:ndarray, nPix:int, nNyq:int=2) -> ndarray: 
+def cropDcf(arrDcf:NDArray, arrK:NDArray, nPix:int, nNyq:int=2) -> NDArray: 
     '''
     `arrDcf`: array of DCF, shape: `[Nk,]`
     `arrK`: array of trajectory, shape: `[Nk,Nd]`, range: `[-0.5,0.5]`
@@ -14,13 +15,13 @@ def cropDcf(arrDcf:ndarray, arrK:ndarray, nPix:int, nNyq:int=2) -> ndarray:
     return arrDcf
 
 
-def normDcf(arrDcf:ndarray, nAx:int) -> ndarray:
+def normDcf(arrDcf:NDArray, nAx:int) -> NDArray:
     arrDcf = arrDcf/abs(arrDcf).sum()
     if nAx == 2: arrDcf *= pi/4
     if nAx == 3: arrDcf *= pi/6
     return arrDcf
 
-def normImg(arrData:ndarray, method:str="mean0_std1", mskFov:ndarray|None=None) -> ndarray:
+def normImg(arrData:NDArray, method:str="mean0_std1", mskFov:NDArray|None=None) -> NDArray:
     arrData = arrData.copy()
     
     if mskFov is None:
@@ -45,7 +46,7 @@ def normImg(arrData:ndarray, method:str="mean0_std1", mskFov:ndarray|None=None) 
         arrData /= vstd
     elif method=="max":
         arrData /= vmax
-    elif method=="energy":
+    elif method=="ene":
         arrData /= vene
     else:
         raise NotImplementedError("")

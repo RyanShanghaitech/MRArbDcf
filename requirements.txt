@@ -1,6 +1,5 @@
 numpy
-matplotlib
 finufft
 scipy
 scikit-image
-mrautograd # https://github.com/RyanShanghaitech/MrAutoGrad
+mrarbgrad

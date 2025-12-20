@@ -1,0 +1,16 @@
+[project]
+name = "MRArbDcf"
+version = "0.0.0"
+dependencies = ["numpy", "finufft"]
+
+description = "Density Compensation Function Design Tool for Arbirary k-Space Trajectoryies."
+keywords = ["MRI", "non-Cartesian", "Reconstruction", "DCF", "Density-Compensation"]
+authors = [{name = "Ryan", email = "ryan_shanghaitech@proton.me"}]
+
+license = "MIT"
+license-files = ["LICENSE"]
+readme = "README.md"
+
+[project.urls]
+Repository = "https://github.com/RyanShanghaitech/MRArbDcf"
+Examples = "https://github.com/RyanShanghaitech/MRArbDcf/tree/main/example"
