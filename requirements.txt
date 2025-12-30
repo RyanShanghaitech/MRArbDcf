@@ -1,5 +1,0 @@
-numpy
-finufft
-scipy
-scikit-image
-mrarbgrad

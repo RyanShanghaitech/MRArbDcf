@@ -34,27 +34,28 @@ def setUseCuda(x:bool):
     useCuda = bool(x)
     xp = cupy if useCuda else numpy
     
-def getArrKArrI0(lstArrK:list[NDArray]) -> tuple[NDArray,NDArray]:
+def _getArrKArrI0(lstArrK:list[NDArray]) -> tuple[NDArray,NDArray]:
     arrK = xp.concatenate(lstArrK, axis=0).astype(xp.float32)
     arrNRO = xp.array([_.shape[0] for _ in lstArrK])
     arrI0 = xp.zeros((len(arrNRO) + 1,), dtype=int)
     arrI0[1:] = xp.cumsum(arrNRO)
     return arrK, arrI0
     
-def sovDcf(nPix:int, lstArrK:list[NDArray], sWind:str="poly", pShape:float=None, fInit:bool=True) -> NDArray:
+def sovDcf(nPix:int, lstArrK:list[NDArray], sWind:str="poly", pShape:float=None) -> NDArray:
     '''
-    convenient interfact
+    solve density compensation function
+    
+    para nPix: designed number of pixels of the trajectory
+    para lstArrK: list of trajectorys
+    para sWind: window function type, can be "poly", "cos", "es"
+    para pShape: window function shape parameter
     '''
-    arrK, arrI0 = getArrKArrI0(lstArrK)
-    return calDcf(nPix, arrK, arrI0, sWind, pShape, fInit)
+    arrK, arrI0 = _getArrKArrI0(lstArrK)
+    return calDcf(nPix, arrK, arrI0, sWind, pShape,)
    
 def calDcf(nPix:int, arrK:NDArray, arrI0:NDArray|None=None, sWind:str="poly", pShape:float=None) -> NDArray:
     t0 = time()
-
-    # input conversasion
     isInputNumpy = isinstance(arrK, numpy.ndarray)
-    arrK = xp.asanyarray(arrK)
-    arrI0 = xp.asanyarray(arrI0)
     
     if fInputCheck: # check
         # unfixable
@@ -67,6 +68,8 @@ def calDcf(nPix:int, arrK:NDArray, arrI0:NDArray|None=None, sWind:str="poly", pS
         # fixable
         if arrK.shape[1]==3 and (arrK[:,2]==0).all(): arrK = arrK[:,:2]
         if useCuda: arrK = arrK.astype("float32")
+        arrK = xp.asanyarray(arrK)
+        arrI0 = xp.asanyarray(arrI0)
     
     # basic parameter
     nPix = int(nPix)
@@ -153,7 +156,7 @@ def calDcf(nPix:int, arrK:NDArray, arrI0:NDArray|None=None, sWind:str="poly", pS
         arrDcf /= arrDcfApo
         if fDbgInfo: print(f"# nufft: {time() - t0:.3f}s"); t0 = time()
     
-    if isInputNumpy:
+    if isInputNumpy and xp!=numpy:
         return arrDcf.get()
     else:
         return arrDcf
