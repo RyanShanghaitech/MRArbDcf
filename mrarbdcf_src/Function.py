@@ -50,21 +50,23 @@ def sovDcf(nPix:int, lstArrK:list[NDArray], sWind:str="poly", pShape:float=None,
    
 def calDcf(nPix:int, arrK:NDArray, arrI0:NDArray|None=None, sWind:str="poly", pShape:float=None) -> NDArray:
     t0 = time()
+
+    # input conversasion
+    isInputNumpy = isinstance(arrK, numpy.ndarray)
+    arrK = xp.asanyarray(arrK)
+    arrI0 = xp.asanyarray(arrI0)
     
     if fInputCheck: # check
         # unfixable
-        if arrK.ndim!=2: raise RuntimeError("")
-        if arrK.shape[1] not in (2,3): raise RuntimeError(f"`arrK.shape` should be `[nK,nDim]`, got `{arrK.shape}`")
+        if not isInputNumpy and not useCuda:
+            raise RuntimeError(f"cupy input must be processed via cuda")
+        if arrK.ndim!=2 or arrK.shape[1] not in (2,3): 
+            raise RuntimeError(f"`arrK.shape` should be `[nK,nDim]`, got `{arrK.shape}`")
         arrRho:NDArray = xp.linalg.norm(arrK, axis=-1)
         if abs(arrRho.max()-0.5)>0.1: raise UserWarning("k-range: [-0.5,0.5]")
         # fixable
         if arrK.shape[1]==3 and (arrK[:,2]==0).all(): arrK = arrK[:,:2]
         if useCuda: arrK = arrK.astype("float32")
-
-    # input conversasion
-    isInputNumpy = numpy.ma.isarray(arrK)
-    arrK = xp.asanyarray(arrK)
-    arrI0 = xp.asanyarray(arrI0)
     
     # basic parameter
     nPix = int(nPix)
