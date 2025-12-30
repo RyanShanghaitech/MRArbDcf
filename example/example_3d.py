@@ -4,7 +4,7 @@ import mrarbgrad as mag
 import mrarbdcf as mad
 from time import time
 
-sTraj = ["VdSpiral", "Rosette", "Yarnball", "Cones"][3]
+sTraj = ["VdSpiral", "Rosette", "Yarnball", "Cones"][2]
 gamma = 42.5756e6
 
 nPix = 256
@@ -42,9 +42,9 @@ arrI0 = zeros((len(arrNRO) + 1,), dtype=int)
 arrI0[1:] = cumsum(arrNRO)
 
 mad.setDbgInfo(1)
-mad.setDtypeCheck(0)
+mad.setInputCheck(0)
 t = time()
-arrDcf = mad.calDcf(nPix, arrK, arrI0, sWind="poly", fInit=1)
+arrDcf = mad.calDcf(nPix, arrK, arrI0, sWind="poly")
 t = time()-t
 print(f"time: {t:.3f}")
 
@@ -68,4 +68,4 @@ ax.set_xlabel("Sample Index")
 ax.set_ylabel("Density Weight")
 ax.grid(True)
 
-show()
+# show()
