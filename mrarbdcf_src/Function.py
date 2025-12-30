@@ -35,10 +35,11 @@ def setUseCuda(x:bool):
     xp = cupy if useCuda else numpy
     
 def _getArrKArrI0(lstArrK:list[NDArray]) -> tuple[NDArray,NDArray]:
-    arrK = xp.concatenate(lstArrK, axis=0).astype(xp.float32)
-    arrNRO = xp.array([_.shape[0] for _ in lstArrK])
-    arrI0 = xp.zeros((len(arrNRO) + 1,), dtype=int)
-    arrI0[1:] = xp.cumsum(arrNRO)
+    _xp = numpy if isinstance(lstArrK[0], numpy.ndarray) else cupy
+    arrK = _xp.concatenate(lstArrK, axis=0).astype(_xp.float32)
+    arrNRO = _xp.array([_.shape[0] for _ in lstArrK])
+    arrI0 = _xp.zeros((len(arrNRO) + 1,), dtype=int)
+    arrI0[1:] = _xp.cumsum(arrNRO)
     return arrK, arrI0
     
 def sovDcf(nPix:int, lstArrK:list[NDArray], sWind:str="poly", pShape:float=None) -> NDArray:
