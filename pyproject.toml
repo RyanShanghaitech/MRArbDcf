@@ -1,7 +1,7 @@
 [project]
 name = "MRArbDcf"
 version = "0.0.0"
-dependencies = ["numpy", "finufft"]
+dependencies = ["numpy", "finufft", "psutil"]
 
 description = "Density Compensation Function Design Tool for Arbirary k-Space Trajectoryies."
 keywords = ["MRI", "non-Cartesian", "Reconstruction", "DCF", "Density-Compensation"]
