@@ -69,10 +69,10 @@ def calDcf(nPix:int, arrK:NDArray, arrI0:NDArray|None=None, sWind:str="poly", pS
         # fixable
         if arrK.shape[1]==3 and (arrK[:,2]==0).all(): arrK = arrK[:,:2]
         if useCuda: arrK = arrK.astype("float32")
-        arrK = xp.asanyarray(arrK)
-        arrI0 = xp.asanyarray(arrI0)
     
     # basic parameter
+    arrK = xp.asanyarray(arrK)
+    arrI0 = xp.asanyarray(arrI0)
     nPix = int(nPix)
     nK, nAx = arrK.shape
     if arrK.dtype==xp.float64:
