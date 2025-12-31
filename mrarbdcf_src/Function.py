@@ -21,15 +21,34 @@ pi = numpy.pi
 # interface function
 fDbgInfo = False
 def setDbgInfo(x:bool):
+    """
+    Set whether to print debug input. Default to False.
+
+    Args:
+        x: True for to print. False for not to.
+    """
     global fDbgInfo
     fDbgInfo = bool(x)
     
 fInputCheck = True
 def setInputCheck(x:bool):
+    """
+    Set whether to check the input type. Recommend and default to True. Can be set to False for benchmark reason.
+
+    Args:
+        x: True for to use. False for not to.
+    """
     global fInputCheck
     fInputCheck = bool(x)
     
 def setUseCuda(x:bool):
+    """
+    Set whether to use cuda for acceleration.
+    By default cuda would be used if cufinufft and cupy are both installed, this function is to let you turn off it.
+
+    Args:
+        x: True for to use. False for not to.
+    """
     global useCuda, xp
     useCuda = bool(x)
     xp = cupy if useCuda else numpy
@@ -43,18 +62,35 @@ def _getArrKArrI0(lstArrK:list[NDArray]) -> tuple[NDArray,NDArray]:
     return arrK, arrI0
     
 def sovDcf(nPix:int, lstArrK:list[NDArray], sWind:str="poly", pShape:float=None) -> NDArray:
-    '''
-    solve density compensation function
+    """
+    Solve density compensation function.
     
-    para nPix: designed number of pixels of the trajectory
-    para lstArrK: list of trajectorys
-    para sWind: window function type, can be "poly", "cos", "es"
-    para pShape: window function shape parameter
-    '''
+    Args:
+        nPix: Designed number of pixels of the trajectory.
+        lstArrK: List of trajectorys, element shape [nK,nAx].
+        sWind: Window function type, can be "poly", "cos", "es".
+        pShape: Window function shape parameter.
+        
+    Returns:
+        Density compensation function, shape [nK,].
+    """
     arrK, arrI0 = _getArrKArrI0(lstArrK)
     return calDcf(nPix, arrK, arrI0, sWind, pShape,)
    
 def calDcf(nPix:int, arrK:NDArray, arrI0:NDArray|None=None, sWind:str="poly", pShape:float=None) -> NDArray:
+    """
+    Deprecated. Calculate density compensation function.
+        
+    Args:
+        nPix: Designed number of pixels of the trajectory.
+        arrK: Concatenated trajectories, shape [nK,nAx].
+        arrI0: Start index of each interleaves, shape [nIntLea,].
+        sWind: Window function type, can be "poly", "cos", "es".
+        pShape: Window function shape parameter.
+        
+    Returns:
+        Density compensation function, shape [nK,].
+    """
     t0 = time()
     isInputNumpy = isinstance(arrK, numpy.ndarray)
     

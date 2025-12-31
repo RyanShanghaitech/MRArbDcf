@@ -66,9 +66,8 @@ ax.set_title(sTraj)
 ax = fig.add_subplot(122)
 iStart, iEnd = 0, lstArrK[0].shape[0]
 ax.plot(abs(arrDcf[iStart:iEnd]), ".-")
-ax.set_title("DCF of first interleave (3D)")
-ax.set_xlabel("Sample Index")
-ax.set_ylabel("Density Weight")
-ax.grid(True)
+ax.set_xlabel("Index")
+ax.set_ylabel("DCF")
+ax.grid("both")
 
-# show()
+show()
