@@ -1,6 +1,6 @@
 [project]
 name = "MRArbDcf"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = ["numpy", "finufft", "psutil", "mrarbgrad"]
 
 description = "Density Compensation Function Design Tool for Arbirary k-Space Trajectoryies."
