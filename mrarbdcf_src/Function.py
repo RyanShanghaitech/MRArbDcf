@@ -19,6 +19,17 @@ xp = cupy if useCuda else numpy
 pi = numpy.pi
 
 # interface function
+nStep = 2 # 1
+def setNumStep(x:int):
+    """
+    While this method can converge in 1 step in most cases, it's possible to set the number of steps via this interface.
+
+    Args:
+        x: Number of steps to be set.
+    """
+    global nStep
+    nStep = int(x)
+    
 fDbgInfo = False
 def setDbgInfo(x:bool):
     """
@@ -61,7 +72,7 @@ def _getArrKArrI0(lstArrK:list[NDArray]) -> tuple[NDArray,NDArray]:
     arrI0[1:] = _xp.cumsum(arrNRO)
     return arrK, arrI0
     
-def sovDcf(nPix:int, lstArrK:list[NDArray], sWind:str="poly", pShape:float=None) -> NDArray:
+def sovDcf(nPix:int, lstArrK:list[NDArray], sWind:str="poly", pShape:float=None) -> list[NDArray]:
     """
     Solve density compensation function.
     
@@ -72,10 +83,13 @@ def sovDcf(nPix:int, lstArrK:list[NDArray], sWind:str="poly", pShape:float=None)
         pShape: Window function shape parameter.
         
     Returns:
-        Density compensation function, shape [nK,].
+        list of density compensation function, w.r.t. lstArrK.
     """
     arrK, arrI0 = _getArrKArrI0(lstArrK)
-    return calDcf(nPix, arrK, arrI0, sWind, pShape,)
+    arrDcf = calDcf(nPix, arrK, arrI0, sWind, pShape)
+    lstArrDcf = [arrDcf[i0:i1] for i0,i1 in zip(arrI0[:-1],arrI0[1:])]
+    lstArrDcf.append(arrDcf[arrI0[-1]:])
+    return lstArrDcf
    
 def calDcf(nPix:int, arrK:NDArray, arrI0:NDArray|None=None, sWind:str="poly", pShape:float=None) -> NDArray:
     """
@@ -152,8 +166,8 @@ def calDcf(nPix:int, arrK:NDArray, arrI0:NDArray|None=None, sWind:str="poly", pS
     if fDbgInfo: print(f"# grid of rho: {time() - t0:.3f}s"); t0 = time()
 
     # Nd window
-    if sWind=="poly": arrWindNd = 1 - arrGridRho.clip(0,1)**(2.4 if pShape is None else pShape)
-    elif sWind=="cos": arrWindNd = xp.cos(arrGridRho*pi/2).clip(0,1)**(0.7 if pShape is None else pShape)
+    if sWind=="poly": arrWindNd = 1 - arrGridRho.clip(0,1)**(2.0 if pShape is None else pShape) # 2.4
+    elif sWind=="cos": arrWindNd = xp.cos(arrGridRho*pi/2).clip(0,1)**(1.0 if pShape is None else pShape) # 0.7
     elif sWind=="es": beta=2.0 if pShape is None else pShape; arrWindNd = xp.exp(beta*xp.sqrt(1-arrGridRho.clip(0,1)**2))/xp.exp(beta)
     else: raise NotImplementedError("")
     
@@ -178,7 +192,7 @@ def calDcf(nPix:int, arrK:NDArray, arrI0:NDArray|None=None, sWind:str="poly", pS
     pNufft = fn.Plan(2, n_modes, eps=eps, dtype=sdtypeC, **nufftpara)
     pNuift.setpts(*arr2PiKT)
     pNufft.setpts(*arr2PiKT)
-    for i in range(1):
+    for i in range(nStep):
         arrPsf = pNuift.execute(arrDcf)
         if fDbgInfo: print(f"# nuift: {time() - t0:.3f}s"); t0 = time()
         

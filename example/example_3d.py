@@ -1,4 +1,5 @@
 from numpy import *
+from numpy.typing import NDArray
 from matplotlib.pyplot import *
 import mrarbgrad as mag
 import mrarbdcf as mad
@@ -16,19 +17,19 @@ dtADC = 5e-6
 
 if sTraj=="Yarnball":
     nAx = 3; mag.setGoldAng(nAx==2); ovTraj = sqrt(nAx); gLim = amin([gLim, 1/(dtADC*nPix*ovTraj)])
-    lstArrK0, lstArrGrad = mag.getG_Yarnball(dFov=fov*sqrt(nAx), lNPix=nPix*sqrt(nAx), dSLim=sLim, dGLim=gLim, dDt=dtGrad)
+    lstArrK0, lstArrGrad = mag.getG_Yarnball(nAx==3, fov*sqrt(nAx), nPix*sqrt(nAx), sLim, gLim, dtGrad)
 elif sTraj=="VdSpiral":
     nAx = 2; mag.setGoldAng(nAx==2); ovTraj = sqrt(nAx); gLim = amin([gLim, 1/(dtADC*nPix*ovTraj)])
-    lstArrK0, lstArrGrad = mag.getG_VarDenSpiral(dFov=fov*sqrt(nAx), lNPix=nPix*sqrt(nAx), dSLim=sLim, dGLim=gLim, dDt=dtGrad)
+    lstArrK0, lstArrGrad = mag.getG_VarDenSpiral(nAx==3, fov*sqrt(nAx), nPix*sqrt(nAx), sLim, gLim, dtGrad)
 elif sTraj=="Rosette":
     nAx = 2; mag.setGoldAng(nAx==2); ovTraj = sqrt(nAx); gLim = amin([gLim, 1/(dtADC*nPix*ovTraj)])
-    lstArrK0, lstArrGrad = mag.getG_Rosette(dFov=fov*sqrt(nAx), lNPix=nPix*sqrt(nAx), dSLim=sLim, dGLim=gLim, dDt=dtGrad)
+    lstArrK0, lstArrGrad = mag.getG_Rosette(nAx==3, fov*sqrt(nAx), nPix*sqrt(nAx), sLim, gLim, dtGrad)
 elif sTraj=="Cones":
     nAx = 3; mag.setGoldAng(nAx==2); ovTraj = sqrt(nAx); gLim = amin([gLim, 1/(dtADC*nPix*ovTraj)])
-    lstArrK0, lstArrGrad = mag.getG_Cones(dFov=fov*sqrt(nAx), lNPix=nPix*sqrt(nAx), dSLim=sLim, dGLim=gLim, dDt=dtGrad)
+    lstArrK0, lstArrGrad = mag.getG_Cones(nAx==3, fov*sqrt(nAx), nPix*sqrt(nAx), sLim, gLim, dtGrad)
 
 # Convert gradients to k-space coordinates
-lstArrK = []
+lstArrK:list[NDArray] = []
 for arrK0, arrGrad in zip(lstArrK0, lstArrGrad):
     arrK, _ = mag.cvtGrad2Traj(arrGrad, dtGrad, dtADC)
     arrK += arrK0
@@ -37,19 +38,11 @@ for arrK0, arrGrad in zip(lstArrK0, lstArrGrad):
 
 mad.setDbgInfo(1)
 mad.setInputCheck(0)
-if 1:
-    t = time()
-    arrDcf = mad.sovDcf(nPix, lstArrK)
-    t = time()-t
-else:
-    arrK = concatenate(lstArrK, axis=0).astype(float32)
-    arrNRO = array([k.shape[0] for k in lstArrK])
-    arrI0 = zeros((len(arrNRO) + 1,), dtype=int)
-    arrI0[1:] = cumsum(arrNRO)
-    t = time()
-    arrDcf = mad.calDcf(nPix, arrK, arrI0)
-    t = time()-t
+t = time()
+lstArrDcf = mad.sovDcf(nPix, lstArrK, sWind="es")
+t = time()-t
 print(f"time: {t:.3f}")
+arrDcf = hstack(lstArrDcf)
 
 # Normalize for 3D (nAx=3)
 arrDcf = mad.normDcf(arrDcf, nAx=nAx)
