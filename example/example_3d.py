@@ -39,26 +39,25 @@ for arrK0, arrGrad in zip(lstArrK0, lstArrGrad):
 mad.setDbgInfo(1)
 mad.setInputCheck(0)
 t = time()
-lstArrDcf = mad.sovDcf(nPix, lstArrK, sWind="es")
+lstArrDcf = mad.sovDcf(nPix, lstArrK, sWind="poly")
 t = time()-t
 print(f"time: {t:.3f}")
-arrDcf = hstack(lstArrDcf)
 
 # Normalize for 3D (nAx=3)
-arrDcf = mad.normDcf(arrDcf, nAx=nAx)
+lstArrDcf = [mad.normDcf(arrDcf, nAx=nAx) for arrDcf in lstArrDcf]
 
 # 4. Visualization
 fig = figure(figsize=(12, 5))
+idx = len(lstArrK)//4
 
 # 3D Trajectory Plot (Subsampling for performance)
 ax = fig.add_subplot(121, projection='3d' if nAx==3 else None)
-ax.plot(*lstArrK[0].T, '.-')
+ax.plot(*lstArrK[idx].T, '.-')
 ax.set_title(sTraj)
 
 # DCF Profile Plot
 ax = fig.add_subplot(122)
-iStart, iEnd = 0, lstArrK[0].shape[0]
-ax.plot(abs(arrDcf[iStart:iEnd]), ".-")
+ax.plot(abs(lstArrDcf[idx]), ".-")
 ax.set_xlabel("Index")
 ax.set_ylabel("DCF")
 ax.grid("both")
