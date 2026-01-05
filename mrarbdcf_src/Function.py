@@ -125,32 +125,23 @@ def calDcf(nPix:int, arrK:NDArray, arrI0:NDArray|None=None, sWind:str="poly", pS
     # basic parameter
     nPix = int(nPix)
     nK, nAx = arrK.shape
-    if arrK.dtype==xp.float64:
-        sdtypeC = "complex128"
-        dtypeC = xp.complex128
-        sdtypeF = "float64"
-        dtypeF = xp.float64
-    elif arrK.dtype==xp.float32:
-        sdtypeC = "complex64"
-        dtypeC = xp.complex64
-        sdtypeF = "float32"
-        dtypeF = xp.float32
-    else:
-        raise NotImplementedError("")
+    complex = xp.complex64
+    float = xp.float32
+    scomplex = "complex64"
     
     if fDbgInfo: print(f"# input check: {time() - t0:.3f}s"); t0 = time()
     
     # data initialize
-    arrDcf = xp.ones((nK,), dtype=dtypeC)
+    arrDcf = xp.ones((nK,), dtype=complex)
     
     # radial DCF
-    arrRho = xp.sum(arrK**2, axis=-1, dtype=dtypeC)
+    arrRho = xp.sum(arrK**2, axis=-1, dtype=complex)
     xp.sqrt(arrRho, out=arrRho)
     arrDcf *= (arrRho+1/nPix)**(nAx-1)
     
     # 1D DCF
     if arrI0 is not None:
-        arrDcf1D = xp.empty((nK,), dtype=dtypeC)
+        arrDcf1D = xp.empty((nK,), dtype=complex)
         arrDcf1D[:-1] = xp.sqrt(xp.sum(xp.diff(arrK, axis=0)**2, axis=-1)) # this step takes 1.2s?
         arrDcf1D[-1] = arrDcf1D[-2]
         arrDcf1D[arrI0[1:]-1] = arrDcf1D[arrI0[1:]-2] # fix the error at seam of two trajectories
@@ -162,7 +153,7 @@ def calDcf(nPix:int, arrK:NDArray, arrI0:NDArray|None=None, sWind:str="poly", pS
 
     # grid of rho
     coords = xp.ogrid[tuple(slice(0, 1, nPix*1j) for _ in range(nAx))]
-    arrGridRho = xp.sqrt(py_sum(c.astype(dtypeF)**2 for c in coords))
+    arrGridRho = xp.sqrt(py_sum(c.astype(float)**2 for c in coords))
     if fDbgInfo: print(f"# grid of rho: {time() - t0:.3f}s"); t0 = time()
 
     # Nd window
@@ -184,12 +175,12 @@ def calDcf(nPix:int, arrK:NDArray, arrI0:NDArray|None=None, sWind:str="poly", pS
     fn = cufinufft if useCuda else finufft
     
     n_modes = tuple(2*nPix-1 for _ in range(nAx))
-    arr2PiKT = xp.array(arrK.T, order='C', dtype=dtypeF)
+    arr2PiKT = xp.array(arrK.T, order='C', dtype=float)
     arr2PiKT *= 2*pi
     eps = 1e-3
     
-    pNuift = fn.Plan(1, n_modes, eps=eps, dtype=sdtypeC, **nufftpara)
-    pNufft = fn.Plan(2, n_modes, eps=eps, dtype=sdtypeC, **nufftpara)
+    pNuift = fn.Plan(1, n_modes, eps=eps, dtype=scomplex, **nufftpara)
+    pNufft = fn.Plan(2, n_modes, eps=eps, dtype=scomplex, **nufftpara)
     pNuift.setpts(*arr2PiKT)
     pNufft.setpts(*arr2PiKT)
     for i in range(nStep):
