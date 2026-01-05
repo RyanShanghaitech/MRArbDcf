@@ -37,7 +37,6 @@ for arrK0, arrGrad in zip(lstArrK0, lstArrGrad):
     lstArrK.append(arrK[:, :nAx])
 
 mad.setDbgInfo(1)
-mad.setInputCheck(0)
 t = time()
 lstArrDcf = mad.sovDcf(nPix, lstArrK, sWind="poly")
 t = time()-t

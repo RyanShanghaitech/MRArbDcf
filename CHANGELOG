@@ -1,0 +1,2 @@
+1.0.4
+Fix a data type bug (which could raise TypeError if InputCheck is enabled) in the input check.

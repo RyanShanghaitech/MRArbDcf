@@ -41,7 +41,7 @@ def setDbgInfo(x:bool):
     global fDbgInfo
     fDbgInfo = bool(x)
     
-fInputCheck = True
+enInputCheck = True
 def setInputCheck(x:bool):
     """
     Set whether to check the input type. Recommend and default to True. Can be set to False for benchmark reason.
@@ -49,8 +49,8 @@ def setInputCheck(x:bool):
     Args:
         x: True for to use. False for not to.
     """
-    global fInputCheck
-    fInputCheck = bool(x)
+    global enInputCheck
+    enInputCheck = bool(x)
     
 def setUseCuda(x:bool):
     """
@@ -107,8 +107,10 @@ def calDcf(nPix:int, arrK:NDArray, arrI0:NDArray|None=None, sWind:str="poly", pS
     """
     t0 = time()
     isInputNumpy = isinstance(arrK, numpy.ndarray)
+    arrK = xp.asanyarray(arrK)
+    arrI0 = xp.asanyarray(arrI0)
     
-    if fInputCheck: # check
+    if enInputCheck: # check
         # unfixable
         if not isInputNumpy and not useCuda:
             raise RuntimeError(f"cupy input must be processed via cuda")
@@ -121,8 +123,6 @@ def calDcf(nPix:int, arrK:NDArray, arrI0:NDArray|None=None, sWind:str="poly", pS
         if useCuda: arrK = arrK.astype("float32")
     
     # basic parameter
-    arrK = xp.asanyarray(arrK)
-    arrI0 = xp.asanyarray(arrI0)
     nPix = int(nPix)
     nK, nAx = arrK.shape
     if arrK.dtype==xp.float64:
@@ -138,7 +138,7 @@ def calDcf(nPix:int, arrK:NDArray, arrI0:NDArray|None=None, sWind:str="poly", pS
     else:
         raise NotImplementedError("")
     
-    if fDbgInfo: print(f"# dtype check: {time() - t0:.3f}s"); t0 = time()
+    if fDbgInfo: print(f"# input check: {time() - t0:.3f}s"); t0 = time()
     
     # data initialize
     arrDcf = xp.ones((nK,), dtype=dtypeC)
